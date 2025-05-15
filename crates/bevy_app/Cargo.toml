@@ -1,6 +1,6 @@
 [package]
 name = "bevy_app"
-version = "0.16.0-dev"
+version = "0.16.0"
 edition = "2024"
 description = "Provides core App functionality for Bevy Engine"
 homepage = "https://bevy.org"

@@ -1,6 +1,6 @@
 [package]
 name = "bevy_diagnostic"
-version = "0.16.0-dev"
+version = "0.16.0"
 edition = "2024"
 description = "Provides diagnostic functionality for Bevy Engine"
 homepage = "https://bevy.org"
