@@ -232,6 +232,16 @@ impl EntityGeneration {
         let raw = self.0.overflowing_add(versions);
         (Self(raw.0), raw.1)
     }
+
+    #[inline]
+    pub fn is_older(self, other: Self) -> bool {
+        let diff = self.0.wrapping_sub(other.0);
+        diff >= (1 << 31)
+    }
+
+    pub fn make_even(&mut self) {
+        self.0 ^= 1;
+    }
 }
 
 /// Lightweight identifier of an [entity](crate::entity).

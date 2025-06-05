@@ -17,6 +17,7 @@ bevy_math = { path = "../bevy_math", version = "0.16.0", default-features = fals
 bevy_reflect = { path = "../bevy_reflect", version = "0.16.0", default-features = false, optional = true }
 bevy_tasks = { path = "../bevy_tasks", version = "0.16.0", default-features = false }
 bevy_utils = { path = "../bevy_utils", version = "0.16.0", default-features = false, optional = true }
+rkyv = { version = "0.8", optional = true }
 serde = { version = "1", default-features = false, features = [
   "derive",
 ], optional = true }
@@ -92,6 +93,9 @@ alloc = ["serde?/alloc"]
 
 ## Uses the `libm` maths library instead of the one provided in `std` and `core`.
 libm = ["bevy_math/libm"]
+
+## Impls of `rkyv` traits for `Transform`
+rkyv = ["bevy_math/rkyv", "dep:rkyv"]
 
 [lints]
 workspace = true
