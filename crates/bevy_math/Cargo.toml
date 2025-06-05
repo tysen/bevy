@@ -83,6 +83,8 @@ bevy_reflect = ["dep:bevy_reflect", "alloc"]
 # Enable libm mathematical functions as a fallback for no_std environments.
 # Can be overridden with std feature.
 nostd-libm = ["dep:libm", "glam/nostd-libm"]
+# Enable glam's impls of the `rkyv` traits
+rkyv = ["glam/rkyv", "glam/bytecheck"]
 
 [lints]
 workspace = true

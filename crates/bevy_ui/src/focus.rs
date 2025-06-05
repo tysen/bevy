@@ -1,5 +1,5 @@
 use crate::{
-    picking_backend::clip_check_recursive, ui_transform::UiGlobalTransform, ComputedNode,
+    ui_transform::UiGlobalTransform, ComputedNode,
     ComputedNodeTarget, Node, UiStack,
 };
 use bevy_ecs::{
@@ -241,7 +241,6 @@ pub fn ui_focus_system(
 
             let contains_cursor = cursor_position.is_some_and(|point| {
                 node.node.contains_point(*node.transform, *point)
-                    && clip_check_recursive(*point, *entity, &clipping_query, &child_of_query)
             });
 
             // The mouse position relative to the node

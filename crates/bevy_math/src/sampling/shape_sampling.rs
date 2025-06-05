@@ -40,12 +40,12 @@
 
 use core::f32::consts::{PI, TAU};
 
-use crate::{ops, primitives::*, NormedVectorSpace, ScalarField, Vec2, Vec3};
+use crate::{common_traits, ops, primitives::*, NormedVectorSpace, ScalarField, Vec2, Vec3};
 use rand::{
     distr::{weighted::WeightedIndex, Distribution},
     Rng,
 };
-use rand_distr::uniform::SampleUniform;
+use rand_distr::{uniform::SampleUniform, weighted::Weight};
 
 /// Exposes methods to uniformly sample a variety of primitive shapes.
 pub trait ShapeSample {
@@ -313,13 +313,14 @@ where
     P: NormedVectorSpace,
     P::Scalar: SampleUniform + PartialOrd + for<'a> ::core::ops::AddAssign<&'a P::Scalar>,
     R: Rng + ?Sized,
+    <P as common_traits::VectorSpace>::Scalar: Weight
 {
     let [a, b, c] = vertices;
     let ab = b - a;
     let ac = c - a;
     let bc = c - b;
 
-    let t = rng.gen_range(P::Scalar::ZERO..=P::Scalar::ONE);
+    let t = rng.gen_range(<<P as common_traits::VectorSpace>::Scalar as ScalarField>::ZERO..=P::Scalar::ONE);
 
     if let Ok(dist) = WeightedIndex::new([ab.norm(), ac.norm(), bc.norm()]) {
         match dist.sample(rng) {

@@ -1,5 +1,5 @@
-//! Entity handling types.
-//!
+        //! Entity handling types.
+    //!
 //! An **entity** exclusively owns zero or more [component] instances, all of different types, and can dynamically acquire or lose them over its lifetime.
 //!
 //! **empty entity**: Entity with zero components.
@@ -288,6 +288,16 @@ impl EntityGeneration {
             1..Self::DIFF_MAX => Ordering::Greater,
             _ => Ordering::Less,
         }
+    }
+
+    #[inline]
+    pub fn is_older(self, other: Self) -> bool {
+        let diff = self.0.wrapping_sub(other.0);
+        diff >= (1 << 31)
+    }
+
+    pub fn make_even(&mut self) {
+        self.0 ^= 1;
     }
 }
 

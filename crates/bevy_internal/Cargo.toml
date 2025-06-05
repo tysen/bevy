@@ -377,8 +377,8 @@ bevy_transform = { path = "../bevy_transform", version = "0.16.0", default-featu
   "bevy-support",
   "bevy_reflect",
 ] }
-bevy_utils = { path = "../bevy_utils", version = "0.16.0-dev", default-features = false }
-bevy_tasks = { path = "../bevy_tasks", version = "0.16.0-dev", default-features = false }
+bevy_utils = { path = "../bevy_utils", version = "0.16", default-features = false }
+bevy_tasks = { path = "../bevy_tasks", version = "0.16", default-features = false }
 
 # bevy (std required)
 bevy_log = { path = "../bevy_log", version = "0.16.0", optional = true }
@@ -394,15 +394,15 @@ bevy_color = { path = "../bevy_color", optional = true, version = "0.16.0", defa
   "alloc",
   "bevy_reflect",
 ] }
-bevy_core_pipeline = { path = "../bevy_core_pipeline", optional = true, version = "0.16.0-dev" }
-bevy_core_widgets = { path = "../bevy_core_widgets", optional = true, version = "0.16.0-dev" }
-bevy_anti_aliasing = { path = "../bevy_anti_aliasing", optional = true, version = "0.16.0-dev" }
-bevy_dev_tools = { path = "../bevy_dev_tools", optional = true, version = "0.16.0-dev" }
-bevy_gilrs = { path = "../bevy_gilrs", optional = true, version = "0.16.0-dev" }
-bevy_gizmos = { path = "../bevy_gizmos", optional = true, version = "0.16.0-dev", default-features = false }
-bevy_gltf = { path = "../bevy_gltf", optional = true, version = "0.16.0-dev" }
-bevy_image = { path = "../bevy_image", optional = true, version = "0.16.0-dev" }
-bevy_input_focus = { path = "../bevy_input_focus", optional = true, version = "0.16.0-dev", default-features = false, features = [
+bevy_core_pipeline = { path = "../bevy_core_pipeline", optional = true, version = "0.16" }
+bevy_core_widgets = { path = "../bevy_core_widgets", optional = true, version = "0.16" }
+bevy_anti_aliasing = { path = "../bevy_anti_aliasing", optional = true, version = "0.16" }
+bevy_dev_tools = { path = "../bevy_dev_tools", optional = true, version = "0.16" }
+bevy_gilrs = { path = "../bevy_gilrs", optional = true, version = "0.16" }
+bevy_gizmos = { path = "../bevy_gizmos", optional = true, version = "0.16", default-features = false }
+bevy_gltf = { path = "../bevy_gltf", optional = true, version = "0.16" }
+bevy_image = { path = "../bevy_image", optional = true, version = "0.16" }
+bevy_input_focus = { path = "../bevy_input_focus", optional = true, version = "0.16", default-features = false, features = [
   "bevy_reflect",
 ] }
 bevy_pbr = { path = "../bevy_pbr", optional = true, version = "0.16.0" }

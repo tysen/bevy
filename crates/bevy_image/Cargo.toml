@@ -46,11 +46,11 @@ bevy_color = { path = "../bevy_color", version = "0.16.0", features = [
   "serialize",
   "wgpu-types",
 ] }
-bevy_ecs = { path = "../bevy_ecs", version = "0.16.0-dev", default-features = false }
-bevy_math = { path = "../bevy_math", version = "0.16.0-dev" }
-bevy_reflect = { path = "../bevy_reflect", version = "0.16.0-dev" }
-bevy_utils = { path = "../bevy_utils", version = "0.16.0-dev" }
-bevy_platform = { path = "../bevy_platform", version = "0.16.0-dev", default-features = false, features = [
+bevy_ecs = { path = "../bevy_ecs", version = "0.16", default-features = false }
+bevy_math = { path = "../bevy_math", version = "0.16" }
+bevy_reflect = { path = "../bevy_reflect", version = "0.16" }
+bevy_utils = { path = "../bevy_utils", version = "0.16" }
+bevy_platform = { path = "../bevy_platform", version = "0.16", default-features = false, features = [
   "std",
 ] }
 
