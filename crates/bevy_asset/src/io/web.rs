@@ -4,7 +4,6 @@ use crate::{AssetApp, AssetPlugin};
 use alloc::{borrow::ToOwned, boxed::Box};
 use bevy_app::{App, Plugin};
 use bevy_tasks::ConditionalSendFuture;
-use blocking::unblock;
 use std::path::{Path, PathBuf};
 use tracing::warn;
 
@@ -145,7 +144,7 @@ async fn get(path: PathBuf) -> Result<Box<dyn Reader>, AssetReaderError> {
     let uri = str_path.to_owned();
     // Use [`unblock`] to run the http request on a separately spawned thread as to not block bevy's
     // async executor.
-    let response = unblock(|| AGENT.get(uri).call()).await;
+    let response = blocking::unblock(|| AGENT.get(uri).call()).await;
 
     match response {
         Ok(mut response) => {
