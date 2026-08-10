@@ -282,7 +282,8 @@ impl ApplicationHandler<WinitUserEvent> for WinitAppRunnerState {
                         self.bevy_window_events.send(keyboard_input);
                     }
                     WindowEvent::CursorMoved { position, .. } => {
-                        let physical_position = DVec2::new(position.x, position.y);
+                        let physical_position = DVec2::new(position.x, position.y)
+                            * win.resolution.resolution_scale() as f64;
 
                         let last_position = win.physical_cursor_position();
                         let delta = last_position.map(|last_pos| {
@@ -351,9 +352,11 @@ impl ApplicationHandler<WinitUserEvent> for WinitAppRunnerState {
                         }
                     }
                     WindowEvent::Touch(touch) => {
-                        let location = touch
-                            .location
-                            .to_logical(win.resolution.scale_factor() as f64);
+                        let mut location = touch.location;
+                        let resolution_scale = win.resolution.resolution_scale() as f64;
+                        location.x *= resolution_scale;
+                        location.y *= resolution_scale;
+                        let location = location.to_logical(win.resolution.scale_factor() as f64);
                         self.bevy_window_events
                             .send(converters::convert_touch_input(touch, location, window));
                     }
@@ -936,7 +939,7 @@ pub(crate) fn react_to_scale_factor_change(
     WindowBackendScaleFactorChanged,
     Option<WindowScaleFactorChanged>,
 ) {
-    let prior_factor = window.resolution.scale_factor();
+    let prior_factor = window.resolution.base_scale_factor();
     window.resolution.set_scale_factor(scale_factor as f32);
 
     let window_backend_scale_factor_changed = WindowBackendScaleFactorChanged {
@@ -950,7 +953,7 @@ pub(crate) fn react_to_scale_factor_change(
         if scale_factor_override.is_none() && !relative_eq!(scale_factor as f32, prior_factor) {
             let window_scale_factor_changed = WindowScaleFactorChanged {
                 window: window_entity,
-                scale_factor,
+                scale_factor: scale_factor * window.resolution.resolution_scale() as f64,
             };
             Some(window_scale_factor_changed)
         } else {

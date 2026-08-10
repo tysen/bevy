@@ -13,7 +13,7 @@ use bevy_input::keyboard::{Key, KeyCode, KeyboardFocusLost, KeyboardInput};
 use bevy_window::{
     ClosingWindow, CursorOptions, Monitor, OnMonitor, PrimaryMonitor, RawHandleWrapper, VideoMode,
     Window, WindowClosed, WindowClosing, WindowCreated, WindowEvent, WindowFocused, WindowMode,
-    WindowResized, WindowWrapper,
+    WindowResized, WindowScaleFactorChanged, WindowWrapper,
 };
 use tracing::{error, info, warn};
 
@@ -310,6 +310,7 @@ pub(crate) fn changed_windows(
     >,
     monitors: Res<WinitMonitors>,
     mut window_resized: MessageWriter<WindowResized>,
+    mut window_scale_factor_changed: MessageWriter<WindowScaleFactorChanged>,
     mut window_event: MessageWriter<WindowEvent>,
     _non_send_marker: NonSendMarker,
 ) {
@@ -385,22 +386,30 @@ pub(crate) fn changed_windows(
                 }
 
             if window.resolution != cache.resolution {
+                // All sizes handed to `winit` are in backend pixels, unaffected
+                // by `resolution_scale`.
                 let mut physical_size = PhysicalSize::new(
-                    window.resolution.physical_width(),
-                    window.resolution.physical_height(),
+                    window.resolution.base_physical_width(),
+                    window.resolution.base_physical_height(),
                 );
 
                 let cached_physical_size = PhysicalSize::new(
-                    cache.physical_width(),
-                    cache.physical_height(),
+                    cache.resolution.base_physical_width(),
+                    cache.resolution.base_physical_height(),
                 );
 
                 let base_scale_factor = window.resolution.base_scale_factor();
 
                 // Note: this may be different from `winit`'s base scale factor if
                 // `scale_factor_override` is set to Some(f32)
-                let scale_factor = window.scale_factor();
-                let cached_scale_factor = cache.scale_factor();
+                let scale_factor = window
+                    .resolution
+                    .scale_factor_override()
+                    .unwrap_or(base_scale_factor);
+                let cached_scale_factor = cache
+                    .resolution
+                    .scale_factor_override()
+                    .unwrap_or(cache.resolution.base_scale_factor());
 
                 // Check and update `winit`'s physical size only if the window is not maximized
                 if scale_factor != cached_scale_factor && !winit_window.is_maximized() {
@@ -428,11 +437,29 @@ pub(crate) fn changed_windows(
                         window_resized.write(event.clone());
                         window_event.write(WindowEvent::WindowResized(event));
                     }
+
+                // A resolution scale change alters the rendered size and effective
+                // scale factor without any backend resize, so consumers keyed on
+                // this message (e.g. camera target info) must be notified here. No
+                // `WindowResized`: the logical size is invariant under resolution
+                // scaling, and this message alone refreshes the render target.
+                if window.resolution.resolution_scale() != cache.resolution.resolution_scale() {
+                    let scale_changed = WindowScaleFactorChanged {
+                        window: entity,
+                        scale_factor: window.scale_factor() as f64,
+                    };
+                    window_scale_factor_changed.write(scale_changed.clone());
+                    window_event.write(WindowEvent::WindowScaleFactorChanged(scale_changed));
+                }
             }
 
             if window.physical_cursor_position() != cache.physical_cursor_position()
                 && let Some(physical_position) = window.physical_cursor_position() {
-                    let position = PhysicalPosition::new(physical_position.x, physical_position.y);
+                    let resolution_scale = window.resolution.resolution_scale();
+                    let position = PhysicalPosition::new(
+                        physical_position.x / resolution_scale,
+                        physical_position.y / resolution_scale,
+                    );
 
                     if let Err(err) = winit_window.set_cursor_position(position) {
                         error!("could not set cursor position: {}", err);
