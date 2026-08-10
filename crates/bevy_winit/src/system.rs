@@ -392,13 +392,15 @@ pub(crate) fn changed_windows(
                 }
 
             if window.resolution != cache.resolution {
+                // All sizes handed to `winit` are in backend pixels, unaffected
+                // by `resolution_scale`.
                 let cache_physical_size = PhysicalSize::new(
-                    cache.resolution.physical_width(),
-                    cache.resolution.physical_height(),
+                    cache.resolution.base_physical_width(),
+                    cache.resolution.base_physical_height(),
                 );
                 let requested_physical_size = PhysicalSize::new(
-                    window.resolution.physical_width(),
-                    window.resolution.physical_height(),
+                    window.resolution.base_physical_width(),
+                    window.resolution.base_physical_height(),
                 );
 
                 if cache_physical_size != requested_physical_size {
@@ -411,6 +413,8 @@ pub(crate) fn changed_windows(
                     }
                 }
 
+                // `scale_factor` includes `resolution_scale`, so a resolution scale change
+                // lands here too: it alters the rendered size without any backend resize.
                 let cache_scale_factor = cache.scale_factor();
                 let requested_scale_factor = window.scale_factor();
 
@@ -425,7 +429,11 @@ pub(crate) fn changed_windows(
 
             if window.physical_cursor_position() != cache.physical_cursor_position()
                 && let Some(physical_position) = window.physical_cursor_position() {
-                    let position = PhysicalPosition::new(physical_position.x, physical_position.y);
+                    let resolution_scale = window.resolution.resolution_scale();
+                    let position = PhysicalPosition::new(
+                        physical_position.x / resolution_scale,
+                        physical_position.y / resolution_scale,
+                    );
 
                     if let Err(err) = winit_window.set_cursor_position(position) {
                         error!("could not set cursor position: {}", err);

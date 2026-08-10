@@ -868,6 +868,16 @@ impl WindowPosition {
 /// For the third case, you can override this automatic scale factor with
 /// [`WindowResolution::set_scale_factor_override`].
 ///
+/// ## Resolution scale
+///
+/// [`WindowResolution::set_resolution_scale`] renders the window at a multiple
+/// of the backend-reported physical size while keeping the logical size
+/// unchanged. Values below `1.0` reduce the rendered resolution, which the
+/// window backend stretches to fill the window — on the web, the browser
+/// compositor scales the canvas's backing buffer to its CSS size. This is
+/// useful on high-density displays with weak GPUs, where rendering at the full
+/// device-pixel resolution is too expensive.
+///
 /// ## Requested and obtained sizes
 ///
 /// The logical size should be equal to the requested size after creating/resizing,
@@ -905,6 +915,8 @@ pub struct WindowResolution {
     ///
     /// Set automatically depending on the pixel density of the screen.
     scale_factor: f32,
+    /// Ratio of rendered physical size to backend-reported physical size.
+    resolution_scale: f32,
 }
 
 impl Default for WindowResolution {
@@ -914,6 +926,7 @@ impl Default for WindowResolution {
             physical_height: 720,
             scale_factor_override: None,
             scale_factor: 1.0,
+            resolution_scale: 1.0,
         }
     }
 }
@@ -931,6 +944,12 @@ impl WindowResolution {
     /// Builder method for adding a scale factor override to the resolution.
     pub fn with_scale_factor_override(mut self, scale_factor_override: f32) -> Self {
         self.set_scale_factor_override(Some(scale_factor_override));
+        self
+    }
+
+    /// Builder method for setting the resolution scale.
+    pub fn with_resolution_scale(mut self, resolution_scale: f32) -> Self {
+        self.set_resolution_scale(resolution_scale);
         self
     }
 
@@ -953,29 +972,66 @@ impl WindowResolution {
     }
 
     /// The window's client area width in physical pixels.
+    ///
+    /// This is the rendered width: the backend-reported width multiplied by
+    /// [`WindowResolution::resolution_scale`].
     #[inline]
     pub fn physical_width(&self) -> u32 {
-        self.physical_width
+        scale_dimension(self.physical_width, self.resolution_scale)
     }
 
     /// The window's client area height in physical pixels.
+    ///
+    /// This is the rendered height: the backend-reported height multiplied by
+    /// [`WindowResolution::resolution_scale`].
     #[inline]
     pub fn physical_height(&self) -> u32 {
-        self.physical_height
+        scale_dimension(self.physical_height, self.resolution_scale)
     }
 
     /// The window's client size in physical pixels
     #[inline]
     pub fn physical_size(&self) -> UVec2 {
+        UVec2::new(self.physical_width(), self.physical_height())
+    }
+
+    /// The window's client area width in physical pixels, as reported by the
+    /// window backend.
+    ///
+    /// This value is unaffected by [`WindowResolution::resolution_scale`].
+    #[inline]
+    pub fn base_physical_width(&self) -> u32 {
+        self.physical_width
+    }
+
+    /// The window's client area height in physical pixels, as reported by the
+    /// window backend.
+    ///
+    /// This value is unaffected by [`WindowResolution::resolution_scale`].
+    #[inline]
+    pub fn base_physical_height(&self) -> u32 {
+        self.physical_height
+    }
+
+    /// The window's client size in physical pixels, as reported by the window
+    /// backend.
+    ///
+    /// This value is unaffected by [`WindowResolution::resolution_scale`].
+    #[inline]
+    pub fn base_physical_size(&self) -> UVec2 {
         UVec2::new(self.physical_width, self.physical_height)
     }
 
     /// The ratio of physical pixels to logical pixels.
     ///
     /// `physical_pixels = logical_pixels * scale_factor`
+    ///
+    /// Includes [`WindowResolution::resolution_scale`], so that the logical
+    /// size is unaffected by resolution scaling.
     pub fn scale_factor(&self) -> f32 {
         self.scale_factor_override
             .unwrap_or_else(|| self.base_scale_factor())
+            * self.resolution_scale
     }
 
     /// The window scale factor as reported by the window backend.
@@ -994,16 +1050,33 @@ impl WindowResolution {
         self.scale_factor_override
     }
 
+    /// The ratio of rendered physical size to backend-reported physical size.
+    #[inline]
+    pub fn resolution_scale(&self) -> f32 {
+        self.resolution_scale
+    }
+
+    /// Set the ratio of rendered physical size to backend-reported physical size.
+    ///
+    /// Values below `1.0` render at a reduced resolution that the window
+    /// backend stretches to fill the window. The logical size is unaffected.
+    #[inline]
+    pub fn set_resolution_scale(&mut self, resolution_scale: f32) {
+        self.resolution_scale = resolution_scale;
+    }
+
     /// Set the window's logical resolution.
     #[inline]
     pub fn set(&mut self, width: f32, height: f32) {
+        let scale_factor = self.scale_factor_override.unwrap_or(self.scale_factor);
         self.set_physical_resolution(
-            (width * self.scale_factor()) as u32,
-            (height * self.scale_factor()) as u32,
+            (width * scale_factor) as u32,
+            (height * scale_factor) as u32,
         );
     }
 
-    /// Set the window's physical resolution.
+    /// Set the window's physical resolution, in backend pixels, unaffected by
+    /// [`WindowResolution::resolution_scale`].
     ///
     /// This will ignore the scale factor setting, so most of the time you should
     /// prefer to use [`WindowResolution::set`].
@@ -1038,6 +1111,14 @@ impl WindowResolution {
     #[inline]
     pub fn set_scale_factor_override(&mut self, scale_factor_override: Option<f32>) {
         self.scale_factor_override = scale_factor_override;
+    }
+}
+
+fn scale_dimension(value: u32, scale: f32) -> u32 {
+    if value == 0 {
+        0
+    } else {
+        ((value as f32 * scale).round() as u32).max(1)
     }
 }
 
