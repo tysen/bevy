@@ -35,7 +35,7 @@ use bevy_ecs::{
 use bevy_image::Image;
 use bevy_render::{
     camera::ExtractedCamera,
-    diagnostic::RecordDiagnostics,
+    diagnostic::{PassKind, RecordDiagnostics},
     extract_component::ExtractComponentPlugin,
     render_asset::RenderAssets,
     render_resource::{
@@ -302,6 +302,10 @@ pub(crate) fn post_processing(
     // Use the [`PostProcessWrite`] infrastructure, since this is a full-screen pass.
     let post_process = view_target.post_process_write();
 
+    let diagnostics = ctx.diagnostic_recorder();
+    let diagnostics = diagnostics.as_deref();
+    let pass_span = diagnostics.pass_span_descriptor(PassKind::Render, "postprocessing");
+
     let pass_descriptor = RenderPassDescriptor {
         label: Some("postprocessing"),
         color_attachments: &[Some(RenderPassColorAttachment {
@@ -311,7 +315,7 @@ pub(crate) fn post_processing(
             ops: Operations::default(),
         })],
         depth_stencil_attachment: None,
-        timestamp_writes: None,
+        timestamp_writes: pass_span.render_timestamp_writes(),
         occlusion_query_set: None,
         multiview_mask: None,
     };
@@ -329,11 +333,8 @@ pub(crate) fn post_processing(
         )),
     );
 
-    let diagnostics = ctx.diagnostic_recorder();
-    let diagnostics = diagnostics.as_deref();
-
     let mut render_pass = ctx.begin_tracked_render_pass(pass_descriptor);
-    let pass_span = diagnostics.pass_span(&mut render_pass, "postprocessing");
+    let pass_span = pass_span.begin(&mut render_pass);
 
     render_pass.set_render_pipeline(pipeline);
     render_pass.set_bind_group(

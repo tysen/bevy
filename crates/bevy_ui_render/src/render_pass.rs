@@ -11,7 +11,7 @@ use bevy_ecs::{
 use bevy_math::FloatOrd;
 use bevy_render::{
     camera::ExtractedCamera,
-    diagnostic::RecordDiagnostics,
+    diagnostic::{PassKind, RecordDiagnostics},
     render_phase::*,
     render_resource::{CachedRenderPipelineId, RenderPassDescriptor},
     renderer::{RenderContext, ViewQuery},
@@ -53,15 +53,17 @@ pub fn ui_pass(
     let diagnostics = ctx.diagnostic_recorder();
     let diagnostics = diagnostics.as_deref();
 
+    let pass_span = diagnostics.pass_span_descriptor(PassKind::Render, "ui");
+
     let mut render_pass = ctx.begin_tracked_render_pass(RenderPassDescriptor {
         label: Some("ui"),
         color_attachments: &[Some(target.get_unsampled_color_attachment())],
         depth_stencil_attachment: None,
-        timestamp_writes: None,
+        timestamp_writes: pass_span.render_timestamp_writes(),
         occlusion_query_set: None,
         multiview_mask: None,
     });
-    let pass_span = diagnostics.pass_span(&mut render_pass, "ui");
+    let pass_span = pass_span.begin(&mut render_pass);
 
     if let Some(viewport) = camera.viewport.as_ref() {
         render_pass.set_camera_viewport(viewport);
