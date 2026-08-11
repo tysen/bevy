@@ -21,6 +21,7 @@ use bevy_ecs::{
 };
 use bevy_render::{
     camera::ExtractedCamera,
+    diagnostic::{PassKind, RecordDiagnostics},
     extract_component::{
         ComponentUniforms, DynamicUniformIndex, ExtractComponent, ExtractComponentPlugin,
         UniformComponentPlugin,
@@ -318,24 +319,30 @@ pub fn fullscreen_material_system<T: FullscreenMaterial>(
         &bind_groups.b
     };
 
-    let pass_descriptor = RenderPassDescriptor {
-        label: Some("fullscreen_material_pass"),
-        color_attachments: &[Some(RenderPassColorAttachment {
-            view: destination,
-            depth_slice: None,
-            resolve_target: None,
-            ops: Operations::default(),
-        })],
-        depth_stencil_attachment: None,
-        timestamp_writes: None,
-        occlusion_query_set: None,
-        multiview_mask: None,
-    };
+    let diagnostics = ctx.diagnostic_recorder();
+    let diagnostics = diagnostics.as_deref();
+    let pass_span = diagnostics.pass_span_descriptor(PassKind::Render, type_name::<T>());
 
     {
-        let mut render_pass = ctx.command_encoder().begin_render_pass(&pass_descriptor);
+        let mut render_pass = ctx.command_encoder().begin_render_pass(&RenderPassDescriptor {
+            label: Some("fullscreen_material_pass"),
+            color_attachments: &[Some(RenderPassColorAttachment {
+                view: destination,
+                depth_slice: None,
+                resolve_target: None,
+                ops: Operations::default(),
+            })],
+            depth_stencil_attachment: None,
+            timestamp_writes: pass_span.render_timestamp_writes(),
+            occlusion_query_set: None,
+            multiview_mask: None,
+        });
+        let pass_span = pass_span.begin(&mut render_pass);
+
         render_pass.set_pipeline(pipeline);
         render_pass.set_bind_group(0, bind_group, &[settings_index.index()]);
         render_pass.draw(0..3, 0..1);
+
+        pass_span.end(&mut render_pass);
     }
 }
