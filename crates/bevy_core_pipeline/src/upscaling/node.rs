@@ -3,7 +3,7 @@ use bevy_camera::{CameraOutputMode, ClearColor, ClearColorConfig};
 use bevy_ecs::prelude::*;
 use bevy_render::{
     camera::ExtractedCamera,
-    diagnostic::RecordDiagnostics,
+    diagnostic::{PassKind, RecordDiagnostics},
     render_resource::{BindGroup, PipelineCache, RenderPassDescriptor, TextureViewId},
     renderer::{RenderContext, ViewQuery},
     view::ViewTarget,
@@ -64,29 +64,35 @@ pub fn upscaling(
         return;
     };
 
-    let pass_descriptor = RenderPassDescriptor {
-        label: Some("upscaling"),
-        color_attachments: &[Some(out_attachment)],
-        depth_stencil_attachment: None,
-        timestamp_writes: None,
-        occlusion_query_set: None,
-        multiview_mask: None,
-    };
-
     let Some(pipeline) = pipeline_cache.get_render_pipeline(upscaling_target.0) else {
         // we need to do some work on the swapchain to avoid uninitialized-drawable
         // artifacts (a pink/magenta screen) on Metal platforms
         #[cfg(any(target_os = "macos", target_os = "ios"))]
-        ctx.command_encoder().begin_render_pass(&pass_descriptor);
+        ctx.command_encoder().begin_render_pass(&RenderPassDescriptor {
+            label: Some("upscaling"),
+            color_attachments: &[Some(out_attachment)],
+            depth_stencil_attachment: None,
+            timestamp_writes: None,
+            occlusion_query_set: None,
+            multiview_mask: None,
+        });
         return;
     };
 
     let diagnostics = ctx.diagnostic_recorder();
     let diagnostics = diagnostics.as_deref();
-    let time_span = diagnostics.time_span(ctx.command_encoder(), "upscaling");
+    let pass_span = diagnostics.pass_span_descriptor(PassKind::Render, "upscaling");
 
     {
-        let mut render_pass = ctx.command_encoder().begin_render_pass(&pass_descriptor);
+        let mut render_pass = ctx.command_encoder().begin_render_pass(&RenderPassDescriptor {
+            label: Some("upscaling"),
+            color_attachments: &[Some(out_attachment)],
+            depth_stencil_attachment: None,
+            timestamp_writes: pass_span.render_timestamp_writes(),
+            occlusion_query_set: None,
+            multiview_mask: None,
+        });
+        let pass_span = pass_span.begin(&mut render_pass);
 
         if let Some(camera) = camera
             && let Some(viewport) = &camera.viewport
@@ -99,7 +105,7 @@ pub fn upscaling(
         render_pass.set_pipeline(pipeline);
         render_pass.set_bind_group(0, bind_group, &[]);
         render_pass.draw(0..3, 0..1);
-    }
 
-    time_span.end(ctx.command_encoder());
+        pass_span.end(&mut render_pass);
+    }
 }

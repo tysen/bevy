@@ -5,7 +5,7 @@ use bevy_log::error;
 use bevy_log::info_span;
 use bevy_render::{
     camera::ExtractedCamera,
-    diagnostic::RecordDiagnostics,
+    diagnostic::{PassKind, RecordDiagnostics},
     occlusion_culling::OcclusionCulling,
     render_phase::ViewBinnedRenderPhases,
     render_resource::{PipelineCache, RenderPassDescriptor, StoreOp},
@@ -187,15 +187,17 @@ fn run_prepass_system(
 
     let depth_stencil_attachment = Some(view_depth_texture.get_attachment(StoreOp::Store));
 
+    let pass_span = diagnostics.pass_span_descriptor(PassKind::Render, label);
+
     let mut render_pass = ctx.begin_tracked_render_pass(RenderPassDescriptor {
         label: Some(label),
         color_attachments: &color_attachments,
         depth_stencil_attachment,
-        timestamp_writes: None,
+        timestamp_writes: pass_span.render_timestamp_writes(),
         occlusion_query_set: None,
         multiview_mask: None,
     });
-    let pass_span = diagnostics.pass_span(&mut render_pass, label);
+    let pass_span = pass_span.begin(&mut render_pass);
 
     if let Some(viewport) =
         Viewport::from_viewport_and_override(camera.viewport.as_ref(), resolution_override)

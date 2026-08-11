@@ -47,7 +47,7 @@ use bevy_render::{
         UniformAllocationMetadataIndex, UntypedPhaseBatchedInstanceBuffers,
         UntypedPhaseIndirectParametersBuffers,
     },
-    diagnostic::RecordDiagnostics as _,
+    diagnostic::{PassKind, RecordDiagnostics as _},
     occlusion_culling::OcclusionCulling,
     render_phase::{GpuRenderBinnedMeshInstance, UNIFORM_ALLOCATION_WORKGROUP_SIZE},
     render_resource::{
@@ -724,13 +724,15 @@ pub fn unpack_bins(
     let diagnostics = render_context.diagnostic_recorder();
     let diagnostics = diagnostics.as_deref();
 
+    let pass_span = diagnostics.pass_span_descriptor(PassKind::Compute, "bin_unpacking");
+
     let command_encoder = render_context.command_encoder();
     let mut compute_pass = command_encoder.begin_compute_pass(&ComputePassDescriptor {
         label: Some("bin unpacking"),
-        timestamp_writes: None,
+        timestamp_writes: pass_span.compute_timestamp_writes(),
     });
 
-    let pass_span = diagnostics.pass_span(&mut compute_pass, "bin_unpacking");
+    let pass_span = pass_span.begin(&mut compute_pass);
 
     // Gather up all views.
     let view_entity = current_view.entity();
@@ -808,14 +810,16 @@ pub fn early_gpu_preprocess(
     let diagnostics = ctx.diagnostic_recorder();
     let diagnostics = diagnostics.as_deref();
 
+    let pass_span = diagnostics.pass_span_descriptor(PassKind::Compute, "early_mesh_preprocessing");
+
     let command_encoder = ctx.command_encoder();
 
     let mut compute_pass = command_encoder.begin_compute_pass(&ComputePassDescriptor {
         label: Some("early_mesh_preprocessing"),
-        timestamp_writes: None,
+        timestamp_writes: pass_span.compute_timestamp_writes(),
     });
 
-    let pass_span = diagnostics.pass_span(&mut compute_pass, "early_mesh_preprocessing");
+    let pass_span = pass_span.begin(&mut compute_pass);
 
     let view_entity = current_view.entity();
     let shadow_cascade_views = current_view.into_inner();
@@ -1039,14 +1043,16 @@ pub fn late_gpu_preprocess(
     let diagnostics = ctx.diagnostic_recorder();
     let diagnostics = diagnostics.as_deref();
 
+    let pass_span = diagnostics.pass_span_descriptor(PassKind::Compute, "late_mesh_preprocessing");
+
     let command_encoder = ctx.command_encoder();
 
     let mut compute_pass = command_encoder.begin_compute_pass(&ComputePassDescriptor {
         label: Some("late_mesh_preprocessing"),
-        timestamp_writes: None,
+        timestamp_writes: pass_span.compute_timestamp_writes(),
     });
 
-    let pass_span = diagnostics.pass_span(&mut compute_pass, "late_mesh_preprocessing");
+    let pass_span = pass_span.begin(&mut compute_pass);
 
     compute_pass.set_pipeline(preprocess_pipeline);
 

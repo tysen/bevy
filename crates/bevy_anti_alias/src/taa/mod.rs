@@ -20,7 +20,7 @@ use bevy_math::vec2;
 use bevy_reflect::{std_traits::ReflectDefault, Reflect};
 use bevy_render::{
     camera::{ExtractedCamera, MipBias, TemporalJitter},
-    diagnostic::RecordDiagnostics,
+    diagnostic::{PassKind, RecordDiagnostics},
     render_resource::{
         binding_types::{sampler, texture_2d, texture_depth_2d},
         BindGroupEntries, BindGroupLayoutDescriptor, BindGroupLayoutEntries,
@@ -182,6 +182,7 @@ pub fn temporal_anti_alias(
 
     let diagnostics = ctx.diagnostic_recorder();
     let diagnostics = diagnostics.as_deref();
+    let pass_span = diagnostics.pass_span_descriptor(PassKind::Render, "taa");
 
     let mut taa_pass = ctx.begin_tracked_render_pass(RenderPassDescriptor {
         label: Some("taa"),
@@ -200,11 +201,11 @@ pub fn temporal_anti_alias(
             }),
         ],
         depth_stencil_attachment: None,
-        timestamp_writes: None,
+        timestamp_writes: pass_span.render_timestamp_writes(),
         occlusion_query_set: None,
         multiview_mask: None,
     });
-    let pass_span = diagnostics.pass_span(&mut taa_pass, "taa");
+    let pass_span = pass_span.begin(&mut taa_pass);
 
     taa_pass.set_render_pipeline(taa_pipeline);
     taa_pass.set_bind_group(0, &taa_bind_group, &[]);
