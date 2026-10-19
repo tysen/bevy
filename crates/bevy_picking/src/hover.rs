@@ -349,12 +349,10 @@ pub fn update_interactions(
     }
 
     // Clear all previous hover data from pointers that are no longer hovering any entities.
-    // We do this last to preserve change detection for picking interactions.
-    for (pointer, _, _) in &mut pointers {
-        let Some(previously_hovered_entities) = previous_hover_map.get(pointer) else {
-            continue;
-        };
-
+    // We do this last to preserve change detection for picking interactions. The previous
+    // map is walked directly rather than through the live pointers: a touch pointer is
+    // despawned on release, and its entities still need their interaction cleared.
+    for previously_hovered_entities in previous_hover_map.values() {
         for entity in previously_hovered_entities.keys() {
             if !new_interaction_state.contains_key(entity)
                 && let Ok(mut interaction) = interact.get_mut(*entity)
