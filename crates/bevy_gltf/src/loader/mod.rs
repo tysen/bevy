@@ -620,7 +620,9 @@ impl GltfLoader {
         // later in the loader when looking up handles for materials. However this would mean
         // that the material's load context would no longer track those images as dependencies.
         let mut texture_handles = Vec::new();
-        if gltf.textures().len() == 1 || cfg!(target_arch = "wasm32") {
+        // Textures serve only materials: an end that skips them fetches none.
+        if settings.load_materials.is_empty() {
+        } else if gltf.textures().len() == 1 || cfg!(target_arch = "wasm32") {
             for texture in gltf.textures() {
                 let image = load_image(
                     texture.clone(),
