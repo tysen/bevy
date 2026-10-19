@@ -202,6 +202,14 @@ pub fn validate_environment_map_size(size: UVec2) -> UVec2 {
     new_size
 }
 
+pub fn request_atmosphere_environment_map_regeneration(
+    mut probes: Query<&mut GeneratedEnvironmentMapLight, With<AtmosphereEnvironmentMap>>,
+) {
+    for mut env_map in &mut probes {
+        env_map.regenerate = true;
+    }
+}
+
 /// When [`AtmosphereEnvironmentMapLight`] is added to an entity, setup
 /// [`AtmosphereEnvironmentMap`] and [`GeneratedEnvironmentMapLight`].
 pub fn on_insert_atmosphere_environment_map_light(
@@ -261,6 +269,7 @@ pub fn on_insert_atmosphere_environment_map_light(
             intensity: env_map_light.intensity,
             rotation: Quat::IDENTITY,
             affects_lightmapped_mesh_diffuse: env_map_light.affects_lightmapped_mesh_diffuse,
+            regenerate: true,
         },
     ));
 }

@@ -40,7 +40,7 @@ mod environment;
 mod node;
 pub mod resources;
 
-use bevy_app::{App, Plugin};
+use bevy_app::{App, Plugin, Update};
 use bevy_asset::{embedded_asset, AssetId};
 use bevy_camera::{Camera3d, Hdr};
 use bevy_core_pipeline::{
@@ -76,7 +76,8 @@ use bevy_shader::load_shader_library;
 use environment::{
     atmosphere_environment, init_atmosphere_probe_layout, init_atmosphere_probe_pipeline,
     on_insert_atmosphere_environment_map_light, on_remove_atmosphere_environment_map_light,
-    prepare_atmosphere_probe_bind_groups, prepare_probe_textures, AtmosphereEnvironmentMap,
+    prepare_atmosphere_probe_bind_groups, prepare_probe_textures, request_atmosphere_environment_map_regeneration,
+    AtmosphereEnvironmentMap,
 };
 use node::{atmosphere_luts, render_sky};
 use resources::{
@@ -117,7 +118,14 @@ impl Plugin for AtmospherePlugin {
             UniformComponentPlugin::<GpuAtmosphereSettings>::default(),
         ))
         .add_observer(on_insert_atmosphere_environment_map_light)
-        .add_observer(on_remove_atmosphere_environment_map_light);
+        .add_observer(on_remove_atmosphere_environment_map_light)
+        .add_systems(
+            Update,
+            request_atmosphere_environment_map_regeneration
+                .ambiguous_with(crate::light_probe::generate::generate_environment_map_light)
+                .ambiguous_with(crate::light_probe::generate::regenerate_on_component_change)
+                .ambiguous_with(crate::light_probe::generate::regenerate_on_asset_event),
+        );
 
         if let Some(render_app) = app.get_sub_app_mut(RenderApp) {
             render_app.add_systems(ExtractSchedule, extract_atmosphere);
