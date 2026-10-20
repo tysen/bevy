@@ -19,6 +19,9 @@ wgpu_wrapper! {
 #[derive(Resource, Clone)]
 pub struct RenderDevice {
     device: WgpuDevice,
+    // wgpu's WebGPU backend rebuilds these from JS on every call; they're fixed at creation.
+    features: wgpu::Features,
+    limits: wgpu::Limits,
 }
 
 impl From<wgpu::Device> for RenderDevice {
@@ -30,6 +33,8 @@ impl From<wgpu::Device> for RenderDevice {
 impl RenderDevice {
     pub fn new(device: wgpu::Device) -> Self {
         Self {
+            features: device.features(),
+            limits: device.limits(),
             device: WgpuDevice::new(device),
         }
     }
@@ -39,7 +44,7 @@ impl RenderDevice {
     /// Functions may panic if you use unsupported features.
     #[inline]
     pub fn features(&self) -> wgpu::Features {
-        self.device.features()
+        self.features
     }
 
     /// List all [`Limits`](wgpu::Limits) that were requested of this device.
@@ -47,7 +52,7 @@ impl RenderDevice {
     /// If any of these limits are exceeded, functions may panic.
     #[inline]
     pub fn limits(&self) -> wgpu::Limits {
-        self.device.limits()
+        self.limits.clone()
     }
 
     /// Creates a [`ShaderModule`](wgpu::ShaderModule) from either SPIR-V or WGSL source code.
